@@ -11,7 +11,7 @@
 #include <filesystem>
 #include <algorithm>
 namespace fs = std::filesystem;
-fs::path pathToFile;
+fs::path pathToCsvFile;
 
 std::atomic<bool> foundFile(false);
 void sleep_seconds(int seconds) {
@@ -24,37 +24,36 @@ fs::path getPath(){
     fs::path exePath(path);
     return exePath.parent_path();
 }
-void functie2(std::string fileNameWithExtension, std::string fileNameWithoutExtension) {
+void FromCsvToXml(std::string fileNameWithExtension, std::string fileNameWithoutExtension) {
     std::ifstream fin(fileNameWithExtension);
-    std::string fullPath = (pathToFile / "OutputFolder").string() + "/" + fileNameWithoutExtension + ".xml";
+    std::string fullPath = (pathToCsvFile / "OutputFolder").string() + "/" + fileNameWithoutExtension + ".xml";
     std::ofstream fout(fullPath);
     if (!fin.is_open()) {
         std::cerr << "Error opening file." << std::endl;
         sleep_seconds(5); // va fi sters
         return ;
     }
-    std::vector<std::string> Headers;
-    //std::vector<std::string> rows;
+    std::vector<std::string> headers;
     std::string line;
-    std::getline(fin, line); 
-    std::getline(fin, line);
+    std::getline(fin, line); // specific formatului pe care il asteptam
+    std::getline(fin, line); // specific formatului pe care il asteptam
     while (std::getline(fin, line)) {
         std::stringstream ss(line);
         std::string header;
         while (std::getline(ss, header, ':')) {
-            Headers.push_back(header);
+            headers.push_back(header);
         }
         break; 
     }
 
-    if (Headers.empty()) {
+    if (headers.empty()) {
         std::cerr << "No headers found in the file." << std::endl;
         sleep_seconds(5);
         return ;
     }
     fout << "<facturi> \n"; 
     int cnt = 0;
-    Headers.pop_back();
+    headers.pop_back(); // specific formatului pe care il asteptam
     while (std::getline(fin, line)) {
         std::stringstream ss(line);
         std::string value;
@@ -64,7 +63,7 @@ void functie2(std::string fileNameWithExtension, std::string fileNameWithoutExte
             row.push_back(value);
         }
 
-        if (row.size() != Headers.size()) {
+        if (row.size() != headers.size()) {
             continue;
         }
         int n = std::atoi(row[0].c_str());
@@ -73,19 +72,13 @@ void functie2(std::string fileNameWithExtension, std::string fileNameWithoutExte
         }
 
         fout << "<factura id =\"" << cnt << "\">\n"; 
-        for (size_t i = 0; i < Headers.size(); ++i) {
-            std::string tag1 = Headers[i];
-            std::string tag2 = row[i];
-            std::replace(tag1.begin(), tag1.end(), ' ', '_');
-            tag1.erase(std::remove(tag1.begin(), tag1.end(), '.'), tag1.end());
-            tag1.erase(std::remove(tag1.begin(), tag1.end(), '/'), tag1.end());
+        for (size_t i = 0; i < headers.size(); ++i) {
+            std::string xmlTag = headers[i];
+            std::replace(xmlTag.begin(), xmlTag.end(), ' ', '_');
+            xmlTag.erase(std::remove(xmlTag.begin(), xmlTag.end(), '.'), xmlTag.end());
+            xmlTag.erase(std::remove(xmlTag.begin(), xmlTag.end(), '/'), xmlTag.end());
 
-            std::replace(tag2.begin(), tag2.end(), ' ', '_');
-            tag2.erase(std::remove(tag2.begin(), tag2.end(), '.'), tag2.end());
-            tag2.erase(std::remove(tag2.begin(), tag2.end(), '/'), tag2.end());
-
-
-            fout << "<" << tag1 << ">" << tag2 << "</" << tag1 << ">\n";
+            fout << "<" << xmlTag << ">" << row[i] << "</" << xmlTag << ">\n";
         }
         fout << "</factura>\n";
         cnt++;
@@ -95,8 +88,8 @@ void functie2(std::string fileNameWithExtension, std::string fileNameWithoutExte
     fin.close();
     std::cout << "File processed: " << fileNameWithoutExtension << std::endl;
 }
-void functie1() {
-    std::string folder = (pathToFile / "InputFolder").string();
+void searchForCsvFile() {
+    std::string folder = (pathToCsvFile / "InputFolder").string();
     while (!foundFile) {
         std::cout<< "Waiting for file...\n";
         if (fs::exists(folder) && fs::is_directory(folder)) {
@@ -105,7 +98,7 @@ void functie1() {
                     std::string ext = entry.path().extension().string(); 
                     if (ext == ".csv"){
                         foundFile = true;
-                        functie2(entry.path().string(),entry.path().stem().string());
+                        FromCsvToXml(entry.path().string(),entry.path().stem().string());
                         fs::remove(entry.path());
                     }
                         
@@ -119,8 +112,8 @@ void functie1() {
 }
 
 int main() {
-    pathToFile = getPath();
-    std::thread t1(functie1);
+    pathToCsvFile = getPath();
+    std::thread t1(searchForCsvFile);
 
     t1.join();
     sleep_seconds(2);
