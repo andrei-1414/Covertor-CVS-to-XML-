@@ -33,27 +33,20 @@ void FromCsvToXml(std::string fileNameWithExtension, std::string fileNameWithout
         sleep_seconds(5); // va fi sters
         return ;
     }
-    std::vector<std::string> headers;
+    std::vector<std::string> headers = {"Data","Nuamr","Suma","Cont","ContClient","Explicatie","FacturaNumar","CodFiscal"};
     std::string line;
     std::getline(fin, line); // specific formatului pe care il asteptam
     std::getline(fin, line); // specific formatului pe care il asteptam
-    while (std::getline(fin, line)) {
+    std::getline(fin, line); // specific formatului pe care il asteptam
+    /*while (std::getline(fin, line)) {
         std::stringstream ss(line);
         std::string header;
         while (std::getline(ss, header, ':')) {
             headers.push_back(header);
         }
         break; 
-    }
-
-    if (headers.empty()) {
-        std::cerr << "No headers found in the file." << std::endl;
-        sleep_seconds(5);
-        return ;
-    }
-    fout << "<facturi> \n"; 
-    int cnt = 0;
-    headers.pop_back(); // specific formatului pe care il asteptam
+    }*/
+    fout << "<Incasari> \n"; 
     while (std::getline(fin, line)) {
         std::stringstream ss(line);
         std::string value;
@@ -62,28 +55,52 @@ void FromCsvToXml(std::string fileNameWithExtension, std::string fileNameWithout
         while (std::getline(ss, value, ':')) {
             row.push_back(value);
         }
-
-        if (row.size() != headers.size()) {
+        /*if (row.size() != headers.size()) {
             continue;
-        }
+        }*/
         int n = std::atoi(row[0].c_str());
         if (n <= 0) {
             continue; 
         }
 
-        fout << "<factura id =\"" << cnt << "\">\n"; 
+        fout << "<Linie>\n";
         for (size_t i = 0; i < headers.size(); ++i) {
-            std::string xmlTag = headers[i];
+            switch (i) {
+                case 0: // Data
+                    fout << "<Data>" << row[6] << "</Data>\n";
+                    break;
+                case 1: // Nuamr
+                    fout << "<Numar>" << row[4] << "</Numar>\n";
+                    break;
+                case 2: // Suma
+                    fout << "<Suma>" << row[8] << "</Suma>\n";
+                    break;
+                case 3: // Cont
+                    fout << "<Cont> "  << row[9]<< "</Cont>\n";
+                    break;
+                case 4: // ContClient
+                    fout << "<ContClient> "<< row[9] << "</ContClient>\n";
+                    break;
+                case 5: // Explicatie
+                    fout << "<Explicatie> " <<"</Explicatie>\n";
+                    break;
+                case 6: // FacturaNumar
+                    fout << "<FacturaNumar>" << row[5] << "</FacturaNumar>\n";
+                    break;
+                case 7: // CodFiscal
+                    fout << "<CodFiscal>" << row[2] << "</CodFiscal>\n";
+                    break;
+            }
+            /*std::string xmlTag = headers[i];
             std::replace(xmlTag.begin(), xmlTag.end(), ' ', '_');
             xmlTag.erase(std::remove(xmlTag.begin(), xmlTag.end(), '.'), xmlTag.end());
             xmlTag.erase(std::remove(xmlTag.begin(), xmlTag.end(), '/'), xmlTag.end());
-
-            fout << "<" << xmlTag << ">" << row[i] << "</" << xmlTag << ">\n";
+            
+            fout << "<" << xmlTag << ">" << row[i] << "</" << xmlTag << ">\n";*/
         }
-        fout << "</factura>\n";
-        cnt++;
+        fout << "</Linie>\n";
     }
-    fout << "</facturi>\n";
+    fout << "</Incasari>\n";
 
     fin.close();
     std::cout << "File processed: " << fileNameWithoutExtension << std::endl;
@@ -113,9 +130,16 @@ void searchForCsvFile() {
 
 int main() {
     pathToCsvFile = getPath();
+    if(!fs::exists(pathToCsvFile / "InputFolder") || !fs::exists(pathToCsvFile / "OutputFolder")) {
+        std::cout << "Creating directories...\n";
+        fs::create_directories(pathToCsvFile / "InputFolder");
+        fs::create_directories(pathToCsvFile / "OutputFolder");
+        sleep_seconds(1);
+        return 0;
+    }
     std::thread t1(searchForCsvFile);
 
     t1.join();
-    sleep_seconds(2);
+    sleep_seconds(1);
     return 0;
 }
