@@ -26,7 +26,17 @@ fs::path getPath(){
 }
 void FromCsvToXml(std::string fileNameWithExtension, std::string fileNameWithoutExtension) {
     std::ifstream fin(fileNameWithExtension);
-    std::string fullPath = (pathToCsvFile / "OutputFolder").string() + "/" + fileNameWithoutExtension + ".xml";
+
+    std::vector<char> FileNameWithoutExtension(fileNameWithoutExtension.begin(), fileNameWithoutExtension.end());
+    for(int i =0 ;i < 9 ;i++) {
+        FileNameWithoutExtension.erase(FileNameWithoutExtension.begin()); 
+    }
+    std::string auxToReplaceTheChars(FileNameWithoutExtension.begin(), FileNameWithoutExtension.end());
+    std::replace(auxToReplaceTheChars.begin(), auxToReplaceTheChars.end(), '_', '.');
+    std::string fileNameWithoutExtensionFinal = "I_" + auxToReplaceTheChars;
+    
+    std::string fullPath = (pathToCsvFile / "OutputFolder").string() + "/" + fileNameWithoutExtensionFinal + ".xml";
+
     std::ofstream fout(fullPath);
     if (!fin.is_open()) {
         std::cerr << "Error opening file." << std::endl;
@@ -62,19 +72,36 @@ void FromCsvToXml(std::string fileNameWithExtension, std::string fileNameWithout
         if (n <= 0) {
             continue; 
         }
+        std::vector<char> formatulCoreect = {'E' , 'C' , 'R' , 'C' , 'M'}; //ECRCM10002
+        std::vector<char> numar(row[4].begin(), row[4].end());
+        bool isValid = true;
+        for(int i = 0;i < formatulCoreect.size();i++) {
+            if (numar[i] != formatulCoreect[i]) {
+                isValid = false;
+                break; 
+            }
 
+        }
+        if (!isValid) {
+            continue; //
+        }
         fout << "<Linie>\n";
         for (size_t i = 0; i < headers.size(); ++i) {
             switch (i) {
                 case 0: // Data
                     fout << "<Data>" << row[6] << "</Data>\n";
                     break;
-                case 1: // Nuamr
+                case 1: { // Nuamr
                     fout << "<Numar>" << row[4] << "</Numar>\n";
                     break;
-                case 2: // Suma
-                    fout << "<Suma>" << row[8] << "</Suma>\n";
+
+                }
+                case 2: { // Suma
+                    std::string sumaFormat = row[8];
+                    std::replace(sumaFormat.begin(), sumaFormat.end(), '.', ','); 
+                    fout << "<Suma>" << sumaFormat << "</Suma>\n";
                     break;
+                }
                 case 3: // Cont
                     fout << "<Cont> "  << row[9]<< "</Cont>\n";
                     break;
