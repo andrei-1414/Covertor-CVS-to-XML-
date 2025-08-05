@@ -98,7 +98,7 @@ void FromCsvToXml(std::string fileNameWithExtension, std::string fileNameWithout
                 }
                 case 2: { // Suma
                     std::string sumaFormat = row[8];
-                    std::replace(sumaFormat.begin(), sumaFormat.end(), '.', ','); 
+                    std::replace(sumaFormat.begin(), sumaFormat.end(), ',', '.'); 
                     fout << "<Suma>" << sumaFormat << "</Suma>\n";
                     break;
                 }
